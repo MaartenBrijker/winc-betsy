@@ -30,7 +30,7 @@ class Transactions(BaseModel):
     
 class Tags(BaseModel):
     tag_id = AutoField()
-    name = CharField(unique=True)
+    name = CharField()
 
 class ProductTags(BaseModel):
     product_id = ForeignKeyField(Products, backref="tags")

@@ -17,12 +17,12 @@ def list_user_products(user_id):
 
 # Returns a list of dictionaries of products per specified tag.
 def list_products_per_tag(tag_id):
-    list_of_products = []
-    for match in ProductTags.select().where(ProductTags.tag_id == tag_id).dicts():
-        print("HEWWO", match)
-        product = Products.select().where(Products.product_id == match['product_id']).dicts()
-        list_of_products.append(product)   
-    return list_of_products
+    if type(tag_id) is not str:
+        print('Tag needs to be a string.. \n Try list_products_per_tag("textiel")')
+        return
+    
+    match = Products.select().join(ProductTags).where(ProductTags.tag_id == tag_id).dicts()
+    return list(match)
 
 # Adds a product to the catalog (Products table), takes a user id and the product details as a dictionary.
 def add_product_to_catalog(user_id, product: dict):
@@ -47,6 +47,7 @@ def add_product_to_catalog(user_id, product: dict):
                     description=product['description'], 
                     unit_price=product['price'], 
                     current_stock=product['stock'])
+    
     # Gets all the existing tags.
     existing_tags = []
     for tag in Tags.select():
@@ -55,10 +56,9 @@ def add_product_to_catalog(user_id, product: dict):
     # Adds new tags, then adds the product tags to the ProductTags table connecting tags to products.
     for tag in product['tags']:
         if tag not in existing_tags:
-            print('ADDING TAG')
+            print('ADDING TAG ', tag)
             Tags.create(name=tag)
-        tag_id = Tags.select().where(Tags.name == tag).get().tag_id
-        ProductTags.create(product_id=product_id, tag_id=tag_id)
+        check = ProductTags.create(product_id=product_id, tag_id=tag)
 
 # Updates the current_stock variable of a product.
 def update_stock(product_id, new_quantity):
@@ -72,11 +72,13 @@ def update_stock(product_id, new_quantity):
 # Checks if product in stock. Then adds a tranction to the Transactions table and reduces the available stock of product.
 def purchase_product(product_id, buyer_id, quantity: int):
     available_quantity = Products.select().where(Products.product_id == product_id).get().current_stock
-    print(available_quantity)
+    print('Available quantity: ', available_quantity)
     if quantity <= available_quantity and quantity > 0:
         Transactions.create(date=date.today(), buyer_id=buyer_id, product_id=product_id, quantity=quantity)
         new_quantity = available_quantity - quantity
         update_stock(product_id, new_quantity)
+        print('New quantity: ', new_quantity)
+
     else:
         print(f"Not enough stock for {quantity} products. Available quantity: {available_quantity} products")
 
